@@ -1,0 +1,141 @@
+<!--
+/**
+ * @author Kevin Bohinski <bohinsk1@tcnj.edu>
+ * @version 1.0
+ * @since 2016-2-18
+ *
+ * Course:        CSC 470 - 03 (Topics: Advanced Browser Technologies)
+ * Instructor:    Prof. Russo
+ * Project Name:  Lab 3
+ * Description:   • Practice created HTML documents with embedded JavaScript.
+ *                • Practice modifying the DOM using the JavaScript Browser API.
+ *
+ * Filename:      index.html
+ * Description:   HTML File, with embedded JS for Lab 3.
+ * Last Modified: 2016-2-18
+ */
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- HTML meta key, value, pairs -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- HTML meta author, description, and title -->
+    <meta name="author" content="https://keybase.io/kbohinski">
+    <meta name="description" content="Lab 3">
+    <title>Lab 3</title>
+
+    <!-- CDN stylesheets to clean up display -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootswatch/3.3.4/paper/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css"/>
+
+    <!-- Bootstrap's required javascript -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+    <!-- IE9 bootstrap support -->
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- JS -->
+    <script type="text/javascript">
+        /* Uses ECMAScript's strict mode */
+        "use strict";
+    </script>
+</head>
+<body>
+<div class="container">
+    <!-- Basic page for javascript to add to -->
+    <h1>Lab 3!</h1>
+
+    <!-- Confirmation message if javascript works -->
+    <div id="confirmation" class="alert alert-success" style="visibility: hidden;"></div>
+
+    <p id="sample-paragraph">This is a sample paragraph. Our image will be appended below me!</p>
+
+    <!-- JS -->
+    <script type="text/javascript">
+        /* Success message to use with confirmation box */
+        var successHtml = '<strong>Success!</strong></br>';
+
+        /**
+         * loadImage()
+         *
+         * Adds elements containing images to the dom.
+         *
+         * @param src
+         * @param w
+         * @param h
+         */
+        function loadImage(src, w, h) {
+            /* Hide confirmation */
+            document.getElementById('confirmation').style.visibility = 'hidden';
+
+            /* Let the user know whats going to happen */
+            alert('Loading in an image and appending it to the dom after the sample paragraph.');
+
+            /* Grab the sample text */
+            var p = document.getElementById('sample-paragraph');
+            /* Make a empty element */
+            var i = document.createElement('loaded-image');
+
+            /* Add img html to the empty element */
+            i.innerHTML = '<img src="' + src + '" width="' + w + '" height="' + h + '" alt="' + src + '" />';
+            /* Add the element to the dom after our sample text */
+            p.appendChild(i);
+
+            /* Show confirmation to the user */
+            document.getElementById('confirmation').innerHTML = successHtml + 'Your image has been loaded!';
+            document.getElementById('confirmation').style.visibility = 'visible';
+        }
+
+        /* Some test cases */
+        loadImage("http://vignette4.wikia.nocookie.net/shrek/images/8/87/Shrek_fierce.jpg", 500, 500);
+        loadImage("http://vignette4.wikia.nocookie.net/shrek/images/8/87/Shrek_fierce.jpg", 250, 250);
+        loadImage("http://vignette4.wikia.nocookie.net/shrek/images/8/87/Shrek_fierce.jpg", 1000, 1000);
+
+        /**
+         * scaleImages()
+         *
+         * Scales all images in the dom by a given ratio.
+         *
+         * @param ratio
+         */
+        function scaleImages(ratio) {
+            /* Hide confirmation */
+            document.getElementById('confirmation').style.visibility = 'hidden';
+
+            /* Let the user know whats going to happen */
+            alert('Scaling all images on the page.');
+
+            /* Grab all images */
+            var imgs = document.getElementsByTagName('img');
+
+            /* With every image, scale it */
+            for (var i = 0; i < imgs.length; i++) {
+                imgs[i].setAttribute('width', "" + (parseInt(imgs[i].getAttribute('width')) * ratio));
+                imgs[i].setAttribute('height', "" + (parseInt(imgs[i].getAttribute('height')) * ratio));
+            }
+
+            /* Show confirmation to the user */
+            document.getElementById('confirmation').innerHTML = successHtml + 'Your images have been scaled!';
+            document.getElementById('confirmation').style.visibility = 'visible';
+        }
+
+        /* Some test cases */
+        scaleImages(2);
+        scaleImages(0.25);
+        scaleImages(0.5);
+    </script>
+</div>
+</body>
+</html>
