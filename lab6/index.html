@@ -1,0 +1,153 @@
+<!--
+/**
+ * @author Kevin Bohinski <bohinsk1@tcnj.edu>
+ * @version 1.0
+ * @since 2016-3-27
+ *
+ * Course:        CSC 470 - 03 (Topics: Advanced Browser Technologies)
+ * Instructor:    Prof. Russo
+ * Project Name:  Lab 6
+ * Description:   • SVG Animations
+ *
+ * Filename:      index.html
+ * Description:   HTML File, with embedded JS for lab 6.
+ * Last Modified: 2016-3-27
+ */
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- HTML meta key, value, pairs -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- HTML meta author, description, and title -->
+    <meta name="author" content="https://keybase.io/kbohinski">
+    <meta name="description" content="Lab 6">
+    <title>Lab 6</title>
+</head>
+<body>
+<svg id="cvs1" width="600" height="500"></svg>
+<svg id="cvs2" width="600" height="500"></svg>
+<svg id="cvs3" width="600" height="500"></svg>
+
+<!-- snap.svg -->
+<script src="https://cdn.jsdelivr.net/snap.svg/0.4.1/snap.svg-min.js"></script>
+<script type="text/javascript">
+    /* Uses ECMAScript's strict mode */
+    "use strict";
+
+    /* As per spec, wrap everything in an IIFE */
+    (function () {
+        /* Set x, y values */
+        let x = 300;
+        let y = 300;
+
+        /* Create svg elements via snap */
+        let s1 = Snap('#cvs1');
+        let s2 = Snap('#cvs2');
+        let s3 = Snap('#cvs3');
+
+        /* Create circle and text for each engine. */
+        let c1 = s1.circle(x, y, x / 2);
+        let t1 = s1.text(x / 2 + 70, y / 2 + 150, 'DuckDuckGo');
+
+        c1.attr({
+            fill: '#C2FF00',
+            stroke: '#000',
+            strokeWidth: 5
+        });
+
+        t1.attr({
+            'font-family': 'Verdana',
+            'font-size': '25px'
+        });
+
+        let ddg = s1.group(c1, t1);
+
+        let c2 = s2.circle(x, y, x / 2);
+        let t2 = s2.text(x / 2 + 108, y / 2 + 150, 'Google');
+
+        c2.attr({
+            fill: '#1975FF',
+            stroke: '#000',
+            strokeWidth: 5
+        });
+
+        t2.attr({
+            'font-family': 'Verdana',
+            'font-size': '25px'
+        });
+
+        let google = s2.group(c2, t2);
+
+        let c3 = s3.circle(x, y, x / 2);
+        let t3 = s3.text(x / 2 + 60, y / 2 + 150, 'Wolfram Alpha');
+
+        c3.attr({
+            fill: '#CC2A14',
+            stroke: '#000',
+            strokeWidth: 5
+        });
+
+        t3.attr({
+            'font-family': 'Verdana',
+            'font-size': '25px'
+        });
+
+        let wa = s3.group(c3, t3);
+
+        /* Attach listeners to svgs. */
+        ddg.mouseover(function (e) {
+            c1.animate({
+                r: x * .6
+            }, 500);
+        });
+
+        ddg.mouseout(function (e) {
+            c1.animate({
+                r: x * .5
+            }, 500);
+        });
+
+        google.mouseover(function (e) {
+            c2.animate({
+                r: x * .6
+            }, 500);
+        });
+
+        google.mouseout(function (e) {
+            c2.animate({
+                r: x * .5
+            }, 500);
+        });
+
+        wa.mouseover(function (e) {
+            c3.animate({
+                r: x * .6
+            }, 500);
+        });
+
+        wa.mouseout(function (e) {
+            c3.animate({
+                r: x * .5
+            }, 500);
+        });
+
+        ddg.click(function (e) {
+            document.location = 'https://duckduckgo.com';
+        });
+
+        google.click(function (e) {
+            document.location = 'https://google.com';
+        });
+
+        wa.click(function (e) {
+            document.location = 'https://www.wolframalpha.com/';
+        });
+    })();
+</script>
+</body>
+</html>
