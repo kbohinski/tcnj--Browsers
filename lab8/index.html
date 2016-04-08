@@ -1,0 +1,204 @@
+<!--
+/**
+ * @author Kevin Bohinski <bohinsk1@tcnj.edu>
+ * @version 1.0
+ * @since 2016-4-7
+ *
+ * Course:        CSC 470 - 03 (Topics: Advanced Browser Technologies)
+ * Instructor:    Prof. Russo
+ * Project Name:  Lab 8
+ * Description:   • Create a canvas element and 2D drawing context.
+ *                • Create and draw a canvas path made up of straight lines.
+ *                • Handle click events on a canvas.
+ *
+ * Filename:      index.html
+ * Description:   HTML file with canvas elements.
+ * Last Modified: 2016-4-7
+ */
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- HTML meta key, value, pairs -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- HTML meta author, description, and title -->
+    <meta name="author" content="https://keybase.io/kbohinski">
+    <meta name="description" content="Lab 8">
+    <title>Lab 8</title>
+
+    <!-- CDN stylesheets to clean up display -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootswatch/3.3.4/paper/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css"/>
+
+    <!-- Bootstrap's required javascript -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+    <!-- IE9 bootstrap support -->
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <style>
+        #cvs {
+            border-style: solid;
+            border-width: 5px;
+            border-color: black;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Lab 8!</h1>
+    <canvas id="cvs" width="1000" height="1000"></canvas>
+    <p id="random">Random: </p>
+    <p id="last-star">Last Star: </p>
+</div>
+</body>
+<script type="text/javascript">
+    /**
+     * @author Kevin Bohinski <bohinsk1@tcnj.edu>
+     * @version 1.0
+     * @since 2016-4-7
+     *
+     * Course:        CSC 470 - 03 (Topics: Advanced Browser Technologies)
+     * Instructor:    Prof. Russo
+     * Project Name:  Lab 8
+     * Description:   • Create a canvas element and 2D drawing context.
+     *                • Create and draw a canvas path made up of straight lines.
+     *                • Handle click events on a canvas.
+     *
+     * Filename:      lab8.js
+     * Description:   JS file with canvas elements.
+     * Last Modified: 2016-4-7
+     */
+
+    /* Uses ECMAScript's strict mode */
+    "use strict";
+
+    /* As per spec, wrap everything in an IIFE */
+    (function () {
+        /* Grab and setup canvas */
+        let cvs = document.getElementById('cvs');
+        let ctx = cvs.getContext('2d');
+
+        /* Variables for stars */
+        let RANDOM_ON = true;
+        let radius = 100;
+        let numPoints = 5;
+        let lineWidth = 5;
+        let strokeColor = '#DFFF00';
+        let fillColor = '#FFFF00';
+
+        /* Empty variable for last click coords */
+        let last = null;
+
+        /**
+         * Helper function to convert from degrees to radians.
+         * @param degrees    : Degrees representation of angle to convert.
+         * @returns {number} : Radian representation of angle after conversion.
+         */
+        function degreesToRadians(degrees) {
+            return degrees * (Math.PI / 180);
+        }
+
+        /**
+         * Helper function to get click coords.
+         * @author: Dr. Mark Russo
+         *
+         * @param cvs : Canvas element
+         * @param evt : Event
+         * @returns {{x: number, y: number}}
+         */
+        function getMousePos(cvs, evt) {
+            let rect = cvs.getBoundingClientRect();
+            return {x: evt.clientX - rect.left, y: evt.clientY - rect.top};
+        }
+
+        /**
+         * Returns a random int between max, min (inclusive of both).
+         * @param max   : High Bound
+         * @param min   : Low Bound
+         * @returns {*} : (Number) Random int between (or including) max, min.
+         */
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        /**
+         * Function to draw star as per spec.
+         * @param cx
+         * @param cy
+         * @param radius
+         * @param numPoints
+         * @param ctx
+         */
+        function drawStar(cx, cy, radius, numPoints, ctx) {
+            /* If random is enabled, draw random stars */
+            if (RANDOM_ON) {
+                document.getElementById('random').innerHTML = 'Random: On';
+                radius = randomInt(20, 200);
+                numPoints = randomInt(5, 10);
+                lineWidth = randomInt(5, 50);
+                strokeColor = 'rgb(' + randomInt(0, 255) + ',' + randomInt(0, 255) + ',' + randomInt(0, 255) + ')';
+                fillColor = 'rgb(' + randomInt(0, 255) + ',' + randomInt(0, 255) + ',' + randomInt(0, 255) + ')';
+            } else {
+                document.getElementById('random').innerHTML = 'Random: Off';
+                radius = 100;
+                numPoints = 5;
+                lineWidth = 5;
+                strokeColor = '#DFFF00';
+                fillColor = '#FFFF00';
+            }
+
+            /* Let the user know some details about the last star drawn */
+            document.getElementById('last-star').innerHTML = 'Last Star: [radius:' + radius + ', numPoints:' + numPoints + ', lineWidth:' + lineWidth + ', strokeColor:' + strokeColor + ', fillColor:' + fillColor + ']';
+
+            /* Setup some vars for the loop */
+            let theta = degreesToRadians(-90);
+            let delta = degreesToRadians(360 / (2 * numPoints));
+            let r = 0;
+
+            /* Begin the poly line */
+            ctx.beginPath();
+
+            /* Iterate for the number of inner and outer points */
+            for (let i = 0; i < (2 * numPoints); i++) {
+                /* If inner / outer point */
+                theta += delta;
+                if (i % 2 === 0) {
+                    r = .5 * radius;
+                } else {
+                    r = radius;
+                }
+                /* Add point to poly line */
+                ctx.lineTo(r * Math.cos(theta) + last.x, r * Math.sin(theta) + last.y);
+            }
+
+            /* Finish poly line */
+            ctx.closePath();
+
+            /* Set some params for the poly line */
+            ctx.lineWidth = lineWidth;
+            ctx.strokeStyle = strokeColor;
+            ctx.stroke();
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+        }
+
+        /* Event listener to draw star when canvas clicked */
+        cvs.addEventListener('mousedown', function (evt) {
+            last = getMousePos(cvs, evt);
+            drawStar(last.x, last.y, radius, numPoints, ctx);
+        });
+    })();
+</script>
+</html>
