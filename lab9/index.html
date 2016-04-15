@@ -1,0 +1,115 @@
+<!--
+/**
+ * @author Kevin Bohinski <bohinsk1@tcnj.edu>
+ * @version 1.0
+ * @since 2016-4-14
+ *
+ * Course:        CSC 470 - 03 (Topics: Advanced Browser Technologies)
+ * Instructor:    Dr. Russo
+ * Project Name:  Lab 9
+ * Description:   • Practice using the XMLHttpRequest object in a Continuation-Passing Style of programming.
+ *
+ * Filename:      index.html
+ * Description:   HTML file with JS.
+ * Last Modified: 2016-4-14
+ */
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- HTML meta key, value, pairs -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- HTML meta author, description, and title -->
+    <meta name="author" content="https://keybase.io/kbohinski">
+    <meta name="description" content="Lab 9">
+    <title>Lab 9</title>
+
+    <!-- CDN stylesheets to clean up display -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootswatch/3.3.4/paper/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css"/>
+
+    <!-- Bootstrap's required javascript -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+    <!-- IE9 bootstrap support -->
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+<body>
+<div class="container">
+    <h1>Lab 9!</h1>
+    <div class="well"><h2>Elements should be appended under me!</h2></div>
+    <div id="append"></div>
+</div>
+</body>
+<script type="text/javascript">
+    /* Uses ECMAScript's strict mode */
+    "use strict";
+
+    /* As per spec, wrap everything in an IIFE */
+    (function () {
+        /* A base url to use for each page */
+        let BASE_URL = 'http://localhost:8080/';
+
+        /**
+         * Implemented function that async loads an array of at least 3 html snippets.
+         * Function appends contents of each file to the page.
+         *
+         * @param pageArray
+         */
+        function loadFiles(pageArray) {
+            /* Grab the first element from the param array */
+            let page = pageArray.shift();
+
+            /*
+             * Checks to see if array exists or if there are any elements.
+             * Serves as the base case for the recursion.
+             */
+            if (page === undefined) {
+                return;
+            }
+
+            /* Create new XHR object */
+            let xhr = new XMLHttpRequest();
+
+            /* Setup how responses will be handled */
+            xhr.onload = function () {
+                /* Make sure we made a good connection to the server */
+                if (xhr.status >= 200 && xhr.status < 400) {
+                    /* Add response to document */
+                    document.getElementById('append').innerHTML += xhr.response;
+                    /* Recursively call to append all elements in the array */
+                    loadFiles(pageArray);
+                } else {
+                    /* Server didnt like our request :( */
+                    console.log('Err: Server returned an error... ' + xhr.status);
+                }
+            };
+
+            /* Setup how errors will be handled */
+            xhr.onerror = function () {
+                console.log('Err: Network error of some sort...');
+            };
+
+            /* Formulate request */
+            xhr.open('GET', BASE_URL + page, false);
+
+            /* Send request */
+            xhr.send();
+        }
+
+        /* Tests */
+        loadFiles(['load1.html', 'load2.html', 'load3.html']);
+    })();
+</script>
+</html>
