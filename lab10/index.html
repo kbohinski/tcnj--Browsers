@@ -1,0 +1,117 @@
+<!--
+/**
+ * @author Kevin Bohinski <bohinsk1@tcnj.edu>
+ * @version 1.0
+ * @since 2016-4-26
+ *
+ * Course:        CSC 470 - 03 (Topics: Advanced Browser Technologies)
+ * Instructor:    Dr. Russo
+ * Project Name:  Lab 10
+ * Description:   • Load an image and draw it on a canvas.
+ *                • Access and modify pixel data of the canvas context using the ImageData object.
+ *                • Draw a modified ImageData object on a canvas.
+ *                • Create and set up a new Web Worker object.
+ *                • Post an ImageData object to a Web Worker.
+ *                • Receive an ImageData object from a Web Worker.
+ *
+ * Filename:      index.html
+ * Description:   Html file to show processing.
+ * Last Modified: 2016-4-26
+ */
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- HTML meta key, value, pairs -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- HTML meta author, description, and title -->
+    <meta name="author" content="https://keybase.io/kbohinski">
+    <meta name="description" content="Lab 10">
+    <title>Lab 10</title>
+
+    <!-- CDN stylesheets to clean up display -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootswatch/3.3.4/paper/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css"/>
+
+    <!-- Bootstrap's required javascript -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+    <!-- IE9 bootstrap support -->
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <style>
+        #cvs {
+            border-style: solid;
+            border-width: 5px;
+            border-color: black;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Lab 10!</h1>
+    <canvas id="cvs" width="1000" height="1000"></canvas>
+    <br>
+    <a href="#" id="btn" class="btn btn-primary btn-lg">Its all ogre now...</a>
+</div>
+</body>
+<script type="text/javascript">
+    /* Uses ECMAScript's strict mode */
+    "use strict";
+
+    /* As per spec, wrap everything in an IIFE */
+    (function () {
+        /* A base url to use for each page */
+        let BASE_URL = 'http://localhost:8080/';
+
+        /* Shortcut el('x') to document.getElementById('x') */
+        let el = document.getElementById.bind(document);
+
+        /* Grab and setup canvas */
+        let cvs = el('cvs');
+        let ctx = cvs.getContext('2d');
+
+        /* Setup a new image, and have it load async on page load */
+        let img = new Image();
+        img.src = BASE_URL + 'shrek.jpg';
+        img.onload = function () {
+            /* As per spec, set canvas x, y to image x, y */
+            cvs.width = img.width;
+            cvs.height = img.height;
+
+            /* Draw the image */
+            ctx.drawImage(img, 0, 0);
+        };
+
+        /* Setup and preload our new worker */
+        let wkr = new Worker('worker.js');
+
+        /**
+         * On a new message from our worker, set the image data, redraw the modified image, and terminate our worker
+         * @param m : The message from the worker
+         */
+        wkr.onmessage = function (m) {
+            let imgData = ctx.createImageData(cvs.width, cvs.height);
+            imgData.data.set(m.data);
+            ctx.putImageData(imgData, 0, 0);
+            wkr.terminate();
+        };
+
+        /* Kick off our worker on button click */
+        el('btn').addEventListener('click', function () {
+            wkr.postMessage(ctx.getImageData(0, 0, img.width, img.height));
+        }, false);
+    })();
+</script>
+</html>
