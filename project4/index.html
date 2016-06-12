@@ -1,0 +1,353 @@
+<!--
+/**
+ * @author Kevin Bohinski <bohinsk1@tcnj.edu>
+ * @version 1.0
+ * @since 2016-5-3
+ *
+ * Course:        CSC 470 - 03 (Topics: Advanced Browser Technologies)
+ * Instructor:    Dr. Russo
+ * Project Name:  Project 4
+ * Description:   You are the JavaScript engineer on a project that is developing
+ *                a new web application that applies a variety of filter effects
+ *                to a user’s uploaded image. You have demonstrated that intensity
+ *                transformation filters involving only pixel point operations
+ *                (e.g. grayscale, brighten, sepia, …) have run times that are
+ *                well within design specifications. Unfortunately, more complex
+ *                filters involving the processing of a pixel region (e.g. median,
+ *                sharpen, blur, …) take too long to complete and lock up the
+ *                browser window in the process. To improve the experience of users
+ *                applying these filters you have decided to split the image horizontally
+ *                into roughly equal strips and divide the work amongst multiple Web Workers.
+ *                The goal of this project is to demonstrate the viability of this idea using
+ *                the median filter, which is frequently the most computationally intensive
+ *                of all pixel region processing filters.
+ *
+ * Filename:      index.html
+ * Description:   Html file to show processing.
+ * Last Modified: 2016-5-3
+ */
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- HTML meta key, value, pairs -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- HTML meta author, description, and title -->
+    <meta name="author" content="https://keybase.io/kbohinski">
+    <meta name="description" content="Project 4">
+    <title>Project 4</title>
+
+    <!-- Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+
+    <!-- CSS Reset -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.3/normalize.css">
+
+    <!-- Milligram CSS minified -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.1.0/milligram.min.css">
+
+    <!-- Chart.js minified -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.2/Chart.js"></script>
+
+    <style>
+        .button-large {
+            font-size: 1.4rem;
+            height: 4.5rem;
+            line-height: 4.5rem;
+            padding: 0 2rem;
+        }
+
+        #cvs {
+            border-style: solid;
+            border-width: 5px;
+            border-color: black;
+        }
+
+        .navigation {
+            left: 0;
+            max-width: 100%;
+            position: fixed;
+            right: 0;
+            top: 0;
+            max-width: 100vw;
+            z-index: 99;
+        }
+
+        /* Re-overiding the width 100% declaration to match size of% based container */
+        .navigation .container {
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        .navigation {
+            background: #f4f5f6;
+            border-bottom: .1rem solid #d1d1d1;
+            display: block;
+            height: 5.2rem;
+            width: 100%;
+        }
+
+        .navigation .title,
+        .navigation-title {
+            color: #606c76;
+            display: inline;
+            font-family: 'Gotham Rounded A', 'Gotham Rounded B', 'Helvetica Neue', Arial, sans-serif;
+            line-height: 5.2rem;
+            font-size: 1.6rem;
+            padding: 0;
+            position: relative;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <nav class="navigation">
+        <section id="nav-container" class="container">
+            <a class="navigation-title" href="#">
+                <h1 class="title">Project 4</h1>
+            </a>
+            <div class="float-right">
+            </div>
+        </section>
+    </nav>
+</div>
+<div class="container" id="main-container" style="margin-top: 75px;">
+    <h1>Project 4!</h1>
+    <canvas id="cvs" width="1000" height="1000"></canvas>
+    <br>
+    <div class="row">
+        <div class="column">
+            <div class="float-left"><a id="btn" class="button button-large" href="#">Go!</a></div>
+        </div>
+        <div class="column">
+            <div class="float-right">
+                <div class="form-group">
+                    <label class="label-inline" for="Num Workers">Num Workers</label>
+                    <input name="Num Workers" id="Num Workers" type="range" value="0" min="1" max="8">
+                </div>
+            </div>
+        </div>
+    </div>
+    <canvas id="chart" width="400" height="300"></canvas>
+    <div id="log">
+    </div>
+    <canvas id="tmp-cvs" width="0" height="0" style="display: none;"></canvas>
+    <canvas id="tmp1-cvs" width="0" height="0" style="display: none;"></canvas>
+</div>
+</body>
+<script type="text/javascript">
+    /* Uses ECMAScript's strict mode */
+    "use strict";
+
+    /* As per spec, wrap everything in an IIFE, with defensive semicolon */
+    ;
+    (function () {
+        /* A base url to use for each page */
+        let BASE_URL = 'http://localhost:8080/';
+
+        /* Shortcut el('x') to document.getElementById('x') */
+        let el = document.getElementById.bind(document);
+
+        /* Objects to manage workers */
+        let wkrs = [];
+        let replyCounts = new Map();
+        let requestNum = 0;
+
+        /* Grab and setup canvas */
+        let cvs = el('cvs');
+        let ctx = cvs.getContext('2d');
+        let tmp1Cvs = el('tmp1-cvs');
+        let tmp1Ctx = tmp1Cvs.getContext('2d');
+        let chartCvs = el('chart');
+        let chartCtx = chartCvs.getContext('2d');
+
+        /* Setup chart */
+        let data = {
+            labels: ['1', '2', '3', '4', '5', '6', '7', '8'],
+            datasets: [
+                {
+                    label: 'Worker Time Comparison',
+                    fill: false,
+                    lineTension: 0.1,
+                    backgroundColor: "rgba(75,192,192,0.4)",
+                    borderColor: "rgba(75,192,192,1)",
+                    borderCapStyle: 'butt',
+                    borderDash: [],
+                    borderDashOffset: 0.0,
+                    borderJoinStyle: 'miter',
+                    pointBorderColor: "rgba(75,192,192,1)",
+                    pointBackgroundColor: "#fff",
+                    pointBorderWidth: 1,
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: "rgba(75,192,192,1)",
+                    pointHoverBorderColor: "rgba(220,220,220,1)",
+                    pointHoverBorderWidth: 2,
+                    pointRadius: 1,
+                    pointHitRadius: 10,
+                    data: [0, 0, 0, 0, 0, 0, 0, 0]
+                }
+            ]
+        };
+
+        /* Setup a new image, and have it load async on page load */
+        let img = new Image();
+        img.src = BASE_URL + 'coins.jpg';
+        img.onload = function () {
+            /* As per spec, set canvas x, y to image x, y */
+            responsiveCanvas();
+        };
+
+        /**
+         * When the page is loaded or resized fix the canvas size.
+         */
+        function responsiveCanvas() {
+            let containerWidth = parseInt(window.getComputedStyle(el('main-container'), null).getPropertyValue('width')) - (parseInt(window.getComputedStyle(el('main-container'), null).getPropertyValue('padding-left').split('px')[0]) * 2);
+            el('cvs').width = containerWidth;
+            el('cvs').height = Math.min((containerWidth / img.width), (img.width / containerWidth)) * img.height;
+            ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, el('cvs').width, el('cvs').height);
+        }
+
+        /**
+         * Helper function to grab a partition of the image.
+         *
+         * I use an image instead of a canvas as I'm in too deep with the responsiveCanvas.
+         *
+         * @param img           : Image to grab the partition from
+         * @param x             : Starting x value
+         * @param y             : Starting y value
+         * @param w             : Width of the box to grab from (i.e. x to (x + w))
+         * @param h             : Height of the box to grab from (i.e. y to (y + h))
+         * @returns {ImageData} : The partition of the image.
+         */
+        function imgToImageData(img, x, y, w, h) {
+            /* Use a tmp canvas to draw the image in full resolution */
+            let tmpCvs = el('tmp-cvs');
+            let tmpCtx = tmpCvs.getContext('2d');
+            tmpCvs.width = img.width;
+            tmpCvs.height = img.height;
+
+            /* Draw image and return the partition data */
+            tmpCtx.drawImage(img, 0, 0);
+            return tmpCtx.getImageData(x, y, w, h);
+        }
+
+        /* On window resize, re draw the responsiveCanvas */
+        window.addEventListener('resize', responsiveCanvas, false);
+
+        /* On button press, generate workers and strips to process, then sew them back together */
+        el('btn').addEventListener('click', function (e) {
+            /* Disable the button to prevent concurrency issues */
+            el('btn').disabled = true;
+            el('btn').style.visibility = 'hidden';
+
+            /* Kill and delete old workers to prevent concurrency issues */
+            for (let i = 0; i < wkrs.length; i++) {
+                wkrs[i].terminate();
+            }
+            wkrs.splice(0, wkrs.length);
+
+            /* Grab the number of requested worker(s) from the slider */
+            let numWorkers = parseInt(el('Num Workers').value);
+
+            let startTime = performance.now();
+
+            /* Create new worker(s) */
+            for (let i = 0; i < numWorkers; i++) {
+                wkrs.push(new Worker('worker.js'));
+            }
+
+            /* Do some math to figure out the strip height per worker */
+            let stripHeight = Math.ceil((img.height - 2) / numWorkers);
+            let lastWorker = img.height - (stripHeight * numWorkers);
+            let workerStartY = 0;
+            let workerEndY = 0;
+
+            /* For each worker, divide the work, and listen for replies */
+            for (let i = 0; i < numWorkers; i++) {
+                workerEndY += stripHeight;
+
+                if (i === (numWorkers - 1)) {
+                    workerEndY += lastWorker;
+                }
+
+                wkrs[i].postMessage({
+                    y: workerStartY,
+                    ey: workerEndY,
+                    stripHeight: stripHeight,
+                    imgWidth: img.width,
+                    imgHeight: img.height,
+                    numWorkers: numWorkers,
+                    requestNum: requestNum,
+                    imgData: imgToImageData(img, 0, workerStartY, img.width, (workerEndY - workerStartY))
+                });
+
+                workerStartY = workerEndY;
+
+                wkrs[i].onmessage = function (m) {
+                    wkrs[i].terminate();
+                    m = m.data;
+
+                    /* Resize canvas only once */
+                    if (tmp1Cvs.width !== m.imgWidth) {
+                        tmp1Cvs.width = m.imgWidth;
+                    }
+                    if (tmp1Cvs.height !== m.imgHeight) {
+                        tmp1Cvs.height = m.imgHeight;
+                    }
+
+                    /*
+                     * Draw unconditionally, if this were a more intricate project,
+                     * one could undo the button disabling and use a map to generate
+                     * a new tmp canvas for each request
+                     */
+                    let imgData = tmp1Ctx.createImageData(m.imgWidth, (m.ey - m.y));
+                    imgData.data.set(m.medianImgData);
+                    tmp1Ctx.putImageData(imgData, 0, m.y);
+
+                    /* As we are using a tmp canvas, make sure all workers have replied */
+                    if (replyCounts.has(m.requestNum)) {
+                        let numReplies = replyCounts.get(m.requestNum).current + 1;
+                        replyCounts.set(m.requestNum, {total: m.numWorkers, current: numReplies});
+                    } else {
+                        replyCounts.set(m.requestNum, {total: m.numWorkers, current: 1});
+                    }
+
+                    /* If all workers replied, transfer tmp canvas to main canvas */
+                    if (replyCounts.get(m.requestNum).current === replyCounts.get(m.requestNum).total) {
+                        img.src = tmp1Cvs.toDataURL('image/png');
+                        tmp1Cvs.width = 0;
+                        tmp1Cvs.height = 0;
+                        responsiveCanvas();
+                        let endTime = performance.now();
+                        let time = (endTime - startTime).toFixed(2) / 2;
+
+                        if (data.datasets[0].data[numWorkers - 1] === 0) {
+                            data.datasets[0].data[numWorkers - 1] = time;
+                        } else {
+                            data.datasets[0].data[numWorkers - 1] = (data.datasets[0].data[numWorkers - 1] + time) / 2;
+                        }
+
+                        let chart = new Chart(chartCtx, {
+                            type: 'line',
+                            data: data
+                        });
+
+                        el('log').innerHTML = '<pre><code>With ' + m.numWorkers + ' worker(s), the median operation took ' + (endTime - startTime).toFixed(2) + 'ms.</code></pre>' + el('log').innerHTML;
+
+                        el('btn').disabled = false;
+                        el('btn').style.visibility = 'visible';
+                    }
+                };
+            }
+
+            /* Increment requestNum to prevent concurrency issues */
+            requestNum++;
+        }, false);
+    })();
+</script>
+</html>
